@@ -86,7 +86,7 @@ model = Conv_Autoencoder()
 criterion = nn.MSELoss()
 optimizer = optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-5)
 
-num_epochs = 10
+num_epochs = 3
 outputs = []
 for epoch in range(num_epochs):
     for (img, _) in data_loader:
@@ -118,3 +118,5 @@ for k in range(0, num_epochs, 4):
             break
         plt.subplot(2, 9, 9+i+1)    # row_length + i + 1
         plt.imshow(item[0])
+
+    plt.show()
