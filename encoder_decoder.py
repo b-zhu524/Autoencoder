@@ -10,11 +10,6 @@ import matplotlib.pyplot as plt
 
 transform = transforms.ToTensor()
 
-# transform = transforms.Compose([
-#     transforms.ToTensor(),
-#     transforms.Normalize(0.5, 0.5)
-# ])    # instead of using tanh
-
 mnist_data = datasets.MNIST(root='../data', train=True, download=True, transform=transform)
 
 data_loader = DataLoader(dataset=mnist_data,
@@ -22,38 +17,11 @@ data_loader = DataLoader(dataset=mnist_data,
                          shuffle=True)
 
 data_iter = iter(data_loader)
-images, labels = data_iter.__next__()
+images, labels = next(data_iter)
 # print(torch.min(images), torch.max(images))
 
-
-class Linear_Autoencoder(nn.Module):
-    def __init__(self):
-        super(Linear_Autoencoder, self).__init__()
-        self.encoder = nn.Sequential(
-            nn.Linear(28*28, 128),
-            nn.ReLU(),
-            nn.Linear(128, 64),
-            nn.ReLU(),
-            nn.Linear(64, 12),
-            nn.ReLU(),
-            nn.Linear(12, 3)
-        )
-
-        self.decoder = nn.Sequential(
-            nn.Linear(3, 12),
-            nn.ReLU(),
-            nn.Linear(12, 64),
-            nn.ReLU(),
-            nn.Linear(64, 128),
-            nn.ReLU(),
-            nn.Linear(128, 28*28),
-            nn.Sigmoid()
-        )
-
-    def forward(self, x):
-        encoded = self.encoder(x)
-        decoded = self.decoder(encoded)
-        return decoded
+save_model = True
+load_model = False
 
 
 class Conv_Autoencoder(nn.Module):
@@ -82,41 +50,52 @@ class Conv_Autoencoder(nn.Module):
         return decoded
 
 
-model = Conv_Autoencoder()
-criterion = nn.MSELoss()
-optimizer = optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-5)
+def train(outputs):
+    model = Conv_Autoencoder()
+    criterion = nn.MSELoss()
+    optimizer = optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-5)
 
-num_epochs = 3
-outputs = []
-for epoch in range(num_epochs):
-    for (img, _) in data_loader:
-        recon = model(img)
-        loss = criterion(recon, img)
+    num_epochs = 3
+    for epoch in range(num_epochs):
+        for (img, _) in data_loader:
+            recon = model(img)
+            loss = criterion(recon, img)
 
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
 
-    print(f"Epoch: {epoch+1}, Loss: {loss.item():.4f}")
-    outputs.append((epoch, img, recon))
+        print(f"Epoch: {epoch+1}, Loss: {loss.item():.4f}")
+        outputs.append((epoch, img, recon))
 
 
-for k in range(0, num_epochs, 4):
-    plt.figure(figsize=(9, 2))
-    plt.gray()
-    imgs = outputs[k][1].detach().numpy()
-    recon = outputs[k][2].detach().numpy()
+def plot():
+    outputs = []
+    num_epochs = 3
 
-    for i, item in enumerate(imgs):
-        if i >= 9:
-            break
-        plt.subplot(2, 9, i+1)
-        plt.imshow(item[0])
+    train(outputs)
 
-    for i, item in enumerate(recon):
-        if i >= 9:
-            break
-        plt.subplot(2, 9, 9+i+1)    # row_length + i + 1
-        plt.imshow(item[0])
+    for k in range(0, num_epochs, 4):
+        plt.figure(figsize=(9, 2))
+        plt.gray()
+        imgs = outputs[k][1].detach().numpy()
+        recon = outputs[k][2].detach().numpy()
 
-    plt.show()
+        for i, item in enumerate(imgs):
+            if i >= 9:
+                break
+
+            plt.subplot(2, 9, i+1)
+            plt.imshow(item[0])
+
+        for i, item in enumerate(recon):
+            if i >= 9:
+                break
+            plt.subplot(2, 9, 9+i+1)    # row_length + i + 1
+            plt.imshow(item[0])
+
+        plt.show()
+
+
+if __name__ == '__main__':
+    plot()
