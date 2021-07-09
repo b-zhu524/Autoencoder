@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 
 
-def save_model(model, optimizer, filename="my_checkpoint.pth.tar"):
+def save_checkpoint(model, optimizer, filename="my_checkpoint.pth.tar"):
     print("=> Saving checkpoint")
     checkpoint = {
         "state_dict": model.state_dict(),
@@ -12,7 +12,7 @@ def save_model(model, optimizer, filename="my_checkpoint.pth.tar"):
     torch.save(checkpoint, filename)
 
 
-def load_model(checkpoint_file, model, optimizer, lr, device="cuda"):
+def load_checkpoint(checkpoint_file, model, optimizer, lr, device="cuda"):
     print("=> Loading checkpoint")
     checkpoint = torch.load(checkpoint_file, map_location=device)
     model.load_state_dict(checkpoint["state_dict"])

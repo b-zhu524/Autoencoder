@@ -1,27 +1,23 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
-from torchvision import datasets, transforms
-from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
-# import numpy as np
+import config
 
+from config import (save_model,
+                    load_model,
+                    transform,
+                    mnist_data,
+                    data_loader)
 
-transform = transforms.ToTensor()
+from utils import (
+    save_checkpoint,
+    load_checkpoint
+)
 
-mnist_data = datasets.MNIST(root='../data', train=True, download=True, transform=transform)
-
-data_loader = DataLoader(dataset=mnist_data,
-                         batch_size=64,
-                         shuffle=True)
 
 data_iter = iter(data_loader)
 images, labels = next(data_iter)
 # print(torch.min(images), torch.max(images))
-
-save_model = True
-load_model = False
 
 
 class Conv_Autoencoder(nn.Module):
@@ -50,36 +46,39 @@ class Conv_Autoencoder(nn.Module):
         return decoded
 
 
-def train(outputs):
-    model = Conv_Autoencoder()
-    criterion = nn.MSELoss()
-    optimizer = optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-5)
+def train(outputs, model, criterion, optimizer):
+    for (img, _) in data_loader:
+        recon = model(img)
+        loss = criterion(recon, img)
 
-    num_epochs = 3
-    for epoch in range(num_epochs):
-        for (img, _) in data_loader:
-            recon = model(img)
-            loss = criterion(recon, img)
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
 
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
+    print(f"Loss: {loss.item():.4f}")
+    outputs.append((img, recon))
 
-        print(f"Epoch: {epoch+1}, Loss: {loss.item():.4f}")
-        outputs.append((epoch, img, recon))
+
+def train_loop():
+    if load_model:
+        load_checkpoint(checkpoint_file="my_checkpoint.pth.tar", model=config.model,
+                        optimizer=config.optimizer, lr=config.lr)
+
+    for epoch in range(config.num_epochs):
+        print(f"epoch {epoch + 1}")
+        train(config.outputs, model=config.model, criterion=config.criterion,
+              optimizer=config.optimizer)
+
+        if save_model:
+            save_checkpoint(model=config.model, optimizer=config.optimizer)
 
 
 def plot():
-    outputs = []
-    num_epochs = 3
-
-    train(outputs)
-
-    for k in range(0, num_epochs, 4):
+    for k in range(0, config.num_epochs, 4):
         plt.figure(figsize=(9, 2))
         plt.gray()
-        imgs = outputs[k][1].detach().numpy()
-        recon = outputs[k][2].detach().numpy()
+        imgs = config.outputs[k][0].detach().numpy()
+        recon = config.outputs[k][1].detach().numpy()
 
         for i, item in enumerate(imgs):
             if i >= 9:
@@ -98,4 +97,5 @@ def plot():
 
 
 if __name__ == '__main__':
-    plot()
+    train_loop()
+    # plot()
