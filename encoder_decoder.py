@@ -1,23 +1,20 @@
 import torch
-import torch.nn as nn
+from torchvision import datasets, transforms
 import matplotlib.pyplot as plt
 import config
-
-from config import (save_model,
-                    load_model,
-                    transform,
-                    mnist_data,
-                    data_loader)
+import torch.nn as nn
+from torch.utils.data import DataLoader
 
 from utils import (
     save_checkpoint,
     load_checkpoint
 )
 
+transform = transforms.ToTensor()
 
-data_iter = iter(data_loader)
-images, labels = next(data_iter)
-# print(torch.min(images), torch.max(images))
+mnist_data = datasets.MNIST(root='../data', train=True, download=True, transform=transform)
+
+data_loader = torch.utils.data.DataLoader(dataset=mnist_data, batch_size=64, shuffle=True)
 
 
 class Conv_Autoencoder(nn.Module):
@@ -59,6 +56,10 @@ def train(outputs, model, criterion, optimizer):
     outputs.append((img, recon))
 
 
+save_model = True
+load_model = True
+
+
 def train_loop():
     if load_model:
         load_checkpoint(checkpoint_file="my_checkpoint.pth.tar", model=config.model,
@@ -97,5 +98,6 @@ def plot():
 
 
 if __name__ == '__main__':
-    train_loop()
+    # train_loop()
     # plot()
+    pass
